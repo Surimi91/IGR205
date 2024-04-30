@@ -2,14 +2,19 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <fstream>
+#include <sstream>
+#include <string>
+
+
 
 // constantes
 const double d1 = 1;
 const double d2 = 0.5;
 const double f = 0.035;
 const double k = 0.058;
-const int rows = 500;
-const int columns = 500;
+const int rows = 200;
+const int columns = 200;
 const int pixelSize = 1;
 
 // Kernel
@@ -23,6 +28,41 @@ double kernel3[3][3] = {
 int wrap(int a, int limit) {
     return (a + limit)%limit;
 }
+
+
+
+
+//pour l'initialisation de la grille via python
+
+void loadCSV(std::vector<std::vector<double> >& A, std::vector<std::vector<double> >& B, const std::string& filename) {
+    std::ifstream file(filename);
+    std::string line;
+    int r = 0;
+
+    if (!file.is_open()) {std::cerr << "Erreur de chargement" << std::endl; return;}
+
+
+    while (std::getline(file, line) && r < rows) {
+        std::istringstream ss(line);
+        std::string cell;
+        int c = 0;
+        A[r].resize(columns);
+        B[r].resize(columns);
+        while (std::getline(ss, cell, ',') && c < columns) {
+            double value = std::stod(cell);
+            A[r][c] = 1.0 - value; // Noir 1, blanc 0
+            B[r][c] = value;       // Noir 0, blanc 1
+            c++;
+        }
+        r++;
+    }
+}
+
+
+
+
+
+
 
 
 void update(std::vector<std::vector<double> >& A, std::vector<std::vector<double> >& B) {
@@ -53,8 +93,11 @@ void update(std::vector<std::vector<double> >& A, std::vector<std::vector<double
     B = B_next;
 }
 
+
 // initialization grid
 void setup(std::vector<std::vector<double> >& A, std::vector<std::vector<double> >& B) {
+    
+    /*
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib(0, 100);
@@ -63,13 +106,18 @@ void setup(std::vector<std::vector<double> >& A, std::vector<std::vector<double>
         for (int c = 0; c < columns; ++c) {
             A[r][c] = 1;
             B[r][c] = 0;
-            if (distrib(gen) < 4) {
+            if (distrib(gen) < 5) {
                 A[r][c] = 0;
                 B[r][c] = 1;
             }
         }
-    }
+    }         */
+
+    loadCSV(A,B,"bin/data/grid.csv");
 }
+
+
+
 
 int main() {
     std::vector<std::vector<double> > A(rows, std::vector<double>(columns));
