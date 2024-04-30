@@ -15,6 +15,8 @@ const float r2 = 0.588;
 const int c2=1;
 const int c1=2;
 
+double sumY;
+
 const int rows = 200;
 const int columns = 200;
 const int pixelSize = 1;
@@ -27,6 +29,10 @@ double kernel5[5][5] = {
     {-1.0, 2.5, 7.0, 2.5, -1.0},
     {-0.25, -1.0, -1.5, -1.0, -0.25}
 };
+
+//pour la convolution et le calcul de X(t+1)
+std::vector<std::vector<double> > Y(rows, std::vector<double>(columns));
+std::vector<std::vector<double> > Y_convo(rows, std::vector<double>(columns));
 
 
 int wrap(int a, int limit) {
@@ -69,20 +75,33 @@ void loadCSV(std::vector<std::vector<double> >& X, std::vector<std::vector<doubl
 
 
 
-void update(std::vector<std::vector<double> >& X, std::vector<std::vector<double> >& Y) {
-    std::vector<std::vector<double> > X_next(rows, std::vector<double>(columns));
-    std::vector<std::vector<double> > Y_next(rows, std::vector<double>(columns));
-
+void update(std::vector<std::vector<double> >& X, std::vector<std::vector<double> >& I) {
+    //calcul Y en fonction de X
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < columns; ++c) {
-            Y[r][c]= 0,5*(abs(X[r][c]+1) - abs(X[r][c]-1));
-            double sumY;
-            //for kernel, a * Y
+            Y[r][c]= 0.5*(abs(X[r][c]+1) - abs(X[r][c]-1));}}
+
+    // convolution et stockage dans Y_convo
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < columns; ++c) {
+            sumY = 0;
+            for (int i = -2; i <= 2; ++i) {
+                for (int j = -2; j <= 2; ++j) {
+                    int wrappedR = wrap(r + i, rows);
+                    int wrappedC = wrap(c + j, columns);
+                    sumY += X[wrappedR][wrappedC] * kernel5[i + 2][j + 2]; }}
+            Y_convo[r][c]=sumY;    
+            }
+        }
+
+
+    //calcul de X(t+1)
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < columns; ++c) {
+            X[r][c]+=Y_convo[r][c]+I[r][c];
         }
     }
 
-    X = X_next;
-    Y = Y_next;
 }
 
 
@@ -104,8 +123,8 @@ int main() {
     X=X0;
 
     //nombre updates
-    for (int i = 0; i < 150; ++i) {
-        update(X0, I);
+    for (int i = 0; i < 5; ++i) {
+        update(X, I);
     }
 
 
@@ -125,7 +144,7 @@ int main() {
             for (int c = 0; c < columns; ++c) {
                 sf::RectangleShape pixel(sf::Vector2f(pixelSize, pixelSize));
                 pixel.setPosition(c * pixelSize, r * pixelSize);
-                pixel.setFillColor(sf::Color(std::min(255.0, A[r][c] * 255), std::min(255.0, B[r][c] * 255), 0));
+                pixel.setFillColor(sf::Color(std::min(255.0, X[r][c] * 255), std::min(255.0, (1-X[r][c]) * 255), 0));
                 window.draw(pixel);
             }
         }
