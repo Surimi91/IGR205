@@ -126,7 +126,7 @@ int main() {
     setup(A, B);
 
     //500 updates
-    for (int i = 0; i < 500; ++i) {
+    for (int i = 0; i < 1500; ++i) {
         update(A, B);
     }
 
