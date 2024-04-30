@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 
+r1=0.396
+r2=0.588
+
+rows, columns = 512, 512  # doit etre comme le cpp
 
 def image_to_grayscale(image_path):
     img = Image.open(image_path).convert('L')  #nuance de grid
@@ -10,21 +14,18 @@ def image_to_grayscale(image_path):
     return normalized_img_array
 
 
-def generate_random_grid(rows, columns, white_chance=0.05):
-    # grille random
-    grid = np.random.choice([0, 1], size=(rows, columns), p=[1-white_chance, white_chance])
-    return grid
-
 def save_to_csv(grid, file_path):
     df = pd.DataFrame(grid)
     df.to_csv(file_path, header=False, index=False)
 
-rows, columns = 200, 200  # doit etre comme le cpp
+def remap_values(grayscale_array, r1, r2):
+    return r1 + (r2 - r1) * grayscale_array 
 
-image_path = 'bin/media/image200.png'
+image_path = 'bin/media/image512.png'
 csv_output_path = 'bin/data/grid.csv'
 
 
 
 grayscale_data = image_to_grayscale(image_path)
+remapped_data = remap_values(grayscale_data, r1, r2)
 save_to_csv(grayscale_data, csv_output_path)
