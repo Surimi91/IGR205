@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from PIL import Image
+import matplotlib.pyplot as plt
 
 r1=0.396
 r2=0.588
@@ -8,10 +9,11 @@ r2=0.588
 rows, columns = 512, 512  # doit etre comme le cpp
 
 def image_to_grayscale(image_path):
-    img = Image.open(image_path).convert('L')  #nuance de grid
+    img = Image.open(image_path).convert('L')  # Convert to grayscale
     img_array = np.array(img)
-    normalized_img_array = img_array / 255.0  #normalisation pour 0 et 1
+    normalized_img_array = (img_array / 127.5) - 1  # Normalize to range [-1, 1]
     return normalized_img_array
+
 
 
 def save_to_csv(grid, file_path):
@@ -27,5 +29,13 @@ csv_output_path = 'bin/data/grid.csv'
 
 
 grayscale_data = image_to_grayscale(image_path)
-remapped_data = remap_values(grayscale_data, r1, r2)
-save_to_csv(grayscale_data, csv_output_path)
+remapped_data = 2*remap_values(grayscale_data, r1, r2)-1
+save_to_csv(remapped_data, csv_output_path)
+#j'ai changé pour remapped
+
+
+plt.figure(figsize=(6, 6))
+plt.imshow(remapped_data, cmap='gray', vmin=0.396, vmax=0.588)
+plt.colorbar()
+plt.title('Remapped')
+plt.show()

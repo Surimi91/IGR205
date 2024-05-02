@@ -9,20 +9,33 @@
 
 
 // constantes
-const double d1 = 1;
-const double d2 = 0.5;
-const double f = 0.035;
-const double k = 0.058;
-const int rows = 200;
-const int columns = 200;
+const int c2=1;
+const int c1=2;
+
+int k;
+int l;
+
+double sumY;
+
+const int rows = 512;
+const int columns = 512;
 const int pixelSize = 1;
 
+const float S=0;  //S=0 donne le basic RD
+const int steps=750;
+
 // Kernel
-double kernel3[3][3] = {
-    {0.05, 0.2, 0.05},
-    {0.2, -1, 0.2},
-    {0.05, 0.2, 0.05}
+double kernel5[5][5] = {
+    {-0.25, -1.0, -1.5, -1.0, -0.25},
+    {-1.0, 2.5, 7.0, 2.5, -1.0},
+    {-1.5, 7.0, -23.5, 7.0, -1.5},
+    {-1.0, 2.5, 7.0, 2.5, -1.0},
+    {-0.25, -1.0, -1.5, -1.0, -0.25}
 };
+
+//pour la convolution et le calcul de X(t+1)
+std::vector<std::vector<double> > Y(rows, std::vector<double>(columns));
+std::vector<std::vector<double> > Y_convo(rows, std::vector<double>(columns));
 
 
 int wrap(int a, int limit) {
@@ -30,11 +43,9 @@ int wrap(int a, int limit) {
 }
 
 
-
-
 //pour l'initialisation de la grille via python
-
-void loadCSV(std::vector<std::vector<double> >& A, std::vector<std::vector<double> >& B, const std::string& filename) {
+//doit être en nuances de gris absolument
+void loadCSV(std::vector<std::vector<double> >& X, std::vector<std::vector<double> >& I, const std::string& filename) {
     std::ifstream file(filename);
     std::string line;
     int r = 0;
@@ -46,12 +57,12 @@ void loadCSV(std::vector<std::vector<double> >& A, std::vector<std::vector<doubl
         std::istringstream ss(line);
         std::string cell;
         int c = 0;
-        A[r].resize(columns);
-        B[r].resize(columns);
+        X[r].resize(columns);
+        I[r].resize(columns);
         while (std::getline(ss, cell, ',') && c < columns) {
             double value = std::stod(cell);
-            A[r][c] = 1.0 - value; // Noir 1, blanc 0
-            B[r][c] = value;       // Noir 0, blanc 1
+            X[r][c] = value*c2;
+            I[r][c] = value*c1;
             c++;
         }
         r++;
@@ -65,54 +76,49 @@ void loadCSV(std::vector<std::vector<double> >& A, std::vector<std::vector<doubl
 
 
 
-void update(std::vector<std::vector<double> >& A, std::vector<std::vector<double> >& B) {
-    std::vector<std::vector<double> > A_next(rows, std::vector<double>(columns));
-    std::vector<std::vector<double> > B_next(rows, std::vector<double>(columns));
+void update(std::vector<std::vector<double> >& X, std::vector<std::vector<double> >& I) {
 
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < columns; ++c) {
-            double aExtra = 0;
-            double bExtra = 0;
-
-            // convolution
-            for (int i = -1; i <= 1; ++i) {
-                for (int j = -1; j <= 1; ++j) {
-                    int wrappedR = wrap(r + i, rows);
-                    int wrappedC = wrap(c + j, columns);
-                    aExtra += A[wrappedR][wrappedC] * kernel3[i + 1][j + 1];
-                    bExtra += B[wrappedR][wrappedC] * kernel3[i + 1][j + 1];
-                }
+            //X[r][c]=2*X[r][c]-1;
             }
+        }
 
-            A_next[r][c] = A[r][c] + d1 * aExtra - A[r][c] * B[r][c] * B[r][c] + f * (1 - A[r][c]);
-            B_next[r][c] = B[r][c] + d2 * bExtra + A[r][c] * B[r][c] * B[r][c] - (f + k) * B[r][c];
+    
+    //calcul Y en fonction de X
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < columns; ++c) {
+            Y[r][c]= 0.5*(abs(X[r][c]+1) - abs(X[r][c]-1));}}
+
+    // convolution et stockage dans Y_convo
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < columns; ++j) {
+            sumY = 0;
+            for (int u = -2; u <= 2; ++u) {
+                for (int v = -2; v <= 2; ++v) {
+                    k=i+u; l=j+v;
+                    k=i+(u/(1-S));  l=j+(v/(1-S));
+                    int wrappedK = wrap(k, rows);
+                    int wrappedL = wrap(l, columns);
+                    sumY += Y[wrappedK][wrappedL] * kernel5[u+2][v+2]; }}
+            Y_convo[i][j]=sumY;   
+            //Y_convo[i][j]=(1+sumY)/2;  //Accordingly, the output Y within the range [−1, 1] requires the inverse mapping f −1 (x) = (x + 1)/2
+            }
+        }
+
+
+    //calcul de X(t+1)
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < columns; ++c) {
+            X[r][c]+=(Y_convo[r][c]+I[r][c]);
         }
     }
 
-    A = A_next;
-    B = B_next;
 }
 
 
 // initialization grid
 void setup(std::vector<std::vector<double> >& A, std::vector<std::vector<double> >& B) {
-    
-    /*
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> distrib(0, 100);
-
-    for (int r = 0; r < rows; ++r) {
-        for (int c = 0; c < columns; ++c) {
-            A[r][c] = 1;
-            B[r][c] = 0;
-            if (distrib(gen) < 5) {
-                A[r][c] = 0;
-                B[r][c] = 1;
-            }
-        }
-    }         */
-
     loadCSV(A,B,"bin/data/grid.csv");
 }
 
@@ -120,14 +126,17 @@ void setup(std::vector<std::vector<double> >& A, std::vector<std::vector<double>
 
 
 int main() {
-    std::vector<std::vector<double> > A(rows, std::vector<double>(columns));
-    std::vector<std::vector<double> > B(rows, std::vector<double>(columns));
+    std::vector<std::vector<double> > X(rows, std::vector<double>(columns));
+    std::vector<std::vector<double> > Y(rows, std::vector<double>(columns));
+    std::vector<std::vector<double> > X0(rows, std::vector<double>(columns));
+    std::vector<std::vector<double> > I(rows, std::vector<double>(columns));
 
-    setup(A, B);
+    setup(X0, I);
+    X=X0;
 
-    //500 updates
-    for (int i = 0; i < 1500; ++i) {
-        update(A, B);
+    //nombre updates
+    for (int i = 0; i < steps; ++i) {
+        update(X, I);
     }
 
 
@@ -147,7 +156,7 @@ int main() {
             for (int c = 0; c < columns; ++c) {
                 sf::RectangleShape pixel(sf::Vector2f(pixelSize, pixelSize));
                 pixel.setPosition(c * pixelSize, r * pixelSize);
-                pixel.setFillColor(sf::Color(std::min(255.0, A[r][c] * 255), std::min(255.0, B[r][c] * 255), 0));
+                pixel.setFillColor(sf::Color(std::min(255.0, X[r][c] * 255), std::min(255.0, (1-X[r][c]) * 255), 0));
                 window.draw(pixel);
             }
         }
