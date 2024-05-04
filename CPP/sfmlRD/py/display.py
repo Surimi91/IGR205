@@ -36,21 +36,8 @@ path = 'bin/data/output.csv'
 image = CSVtoGrid(path)
 binary_image, skeletonized_image = binarize_and_skeletonize(image)
 
-
-
-# affichage
-fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-axes[0].imshow(image, cmap='gray')
-axes[0].set_title('RD')
-axes[0].axis('off')
-
-axes[1].imshow(binary_image, cmap='gray')
-axes[1].set_title('Binary')
-axes[1].axis('off')
-
-axes[2].imshow(skeletonized_image, cmap='gray')
-axes[2].set_title('Skeletonized')
-axes[2].axis('off')
+plt.imshow(skeletonized_image, cmap='gray')
+plt.axis('off')
 
 plt.tight_layout()
 plt.show()
