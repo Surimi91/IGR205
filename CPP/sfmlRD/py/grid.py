@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 import matplotlib.pyplot as plt
+import cv2
 
 r1=0.396
 r2=0.588
@@ -38,4 +39,4 @@ plt.figure(figsize=(6, 6))
 plt.imshow(remapped_data, cmap='gray', vmin=0.396, vmax=0.588)
 plt.colorbar()
 plt.title('Remapped')
-plt.show()
+#plt.show()

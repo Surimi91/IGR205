@@ -22,7 +22,7 @@ const int columns = 512;
 const int pixelSize = 1;
 
 const float S=0;  //S=0 donne le basic RD
-const int steps=750;
+const int steps=500;
 
 // Kernel
 double kernel5[5][5] = {
@@ -73,18 +73,8 @@ void loadCSV(std::vector<std::vector<double> >& X, std::vector<std::vector<doubl
 
 
 
-
-
-
 void update(std::vector<std::vector<double> >& X, std::vector<std::vector<double> >& I) {
 
-    for (int r = 0; r < rows; ++r) {
-        for (int c = 0; c < columns; ++c) {
-            //X[r][c]=2*X[r][c]-1;
-            }
-        }
-
-    
     //calcul Y en fonction de X
     for (int r = 0; r < rows; ++r) {
         for (int c = 0; c < columns; ++c) {
@@ -125,6 +115,27 @@ void setup(std::vector<std::vector<double> >& A, std::vector<std::vector<double>
 
 
 
+void saveGridToCSV(const std::vector<std::vector<double> >& grid, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "pas ouvert.\n";
+        return;
+    }
+    
+    for (const auto& row : grid) {
+        for (size_t i = 0; i < row.size(); ++i) {
+            file << row[i];
+            if (i < row.size() - 1) file << ",";
+        }
+        file << "\n";
+    }
+    file.close();
+}
+
+
+
+
+
 int main() {
     std::vector<std::vector<double> > X(rows, std::vector<double>(columns));
     std::vector<std::vector<double> > Y(rows, std::vector<double>(columns));
@@ -143,6 +154,11 @@ int main() {
 
     sf::RenderWindow window(sf::VideoMode(columns * pixelSize, rows * pixelSize), "Simulation Results");
 
+
+    sf::Texture texture;
+    texture.create(window.getSize().x, window.getSize().y);
+
+    
     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
@@ -157,11 +173,32 @@ int main() {
                 sf::RectangleShape pixel(sf::Vector2f(pixelSize, pixelSize));
                 pixel.setPosition(c * pixelSize, r * pixelSize);
                 pixel.setFillColor(sf::Color(std::min(255.0, X[r][c] * 255), std::min(255.0, (1-X[r][c]) * 255), 0));
+                pixel.setFillColor(sf::Color(std::min(255.0, (1-X[r][c]) * 255), std::min(255.0, (1-X[r][c]) * 255), std::min(255.0, (1-X[r][c]) * 255)));
+                //pour le N et B
                 window.draw(pixel);
             }
         }
 
         window.display();
+
+
+
+                // Capture de la fenêtre
+        texture.update(window);
+        sf::Image screenshot = texture.copyToImage();
+
+
+        for (int r = 0; r < rows; ++r) {
+            for (int c = 0; c < columns; ++c) {
+                if (X[r][c]>0.5){
+                    X[r][c]=1;
+                } else{X[r][c]=0;}
+            }
+        }
+        // Enregistrement de l'image en PNG
+        saveGridToCSV(X,"bin/data/output.csv");
+
+        screenshot.saveToFile("screenshot.png");
     }
 
     return 0;
