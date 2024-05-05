@@ -159,12 +159,20 @@ int main() {
     texture.create(window.getSize().x, window.getSize().y);
 
     
-    while (window.isOpen()) {
+     while (window.isOpen()) {
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
+
+            // Ajout de la gestion de l'appui sur la touche A
+            if (event.type == sf::Event::KeyPressed) {
+                if (event.key.code == sf::Keyboard::A) {
+                    window.close();
+                }
+            }
         }
+     
 
         window.clear();
 
