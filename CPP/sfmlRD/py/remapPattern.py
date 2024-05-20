@@ -38,25 +38,42 @@ high_threshold = 150
 edge_matrix1 = canny_edge_detection(image_path0, low_threshold, high_threshold)
 edge_matrix2 = canny_edge_detection(image_path1, low_threshold, high_threshold)
 
-
-
-
 save_to_csv(edge_matrix1, 'edges_frame0.csv')
 save_to_csv(edge_matrix2, 'edges_frame1.csv')
 
+edge1 = load_from_csv('edges_frame0.csv')
+edge2 = load_from_csv('edges_frame1.csv')
 
-loaded_edge_matrix1 = load_from_csv('edges_frame0.csv')
-loaded_edge_matrix2 = load_from_csv('edges_frame1.csv')
 
-# display
-fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
-axes[0].imshow(loaded_edge_matrix1, cmap='gray')
-axes[0].set_title('Contours Frame 0')
-axes[0].axis('off')
+def select_key_points(edge_matrix):
+    points = [] #on garde la bordure
+    for i in range(len(edge_matrix)):
+        for j in range(len(edge_matrix[0])):
+            if edge_matrix[i][j] == 255:
+                points.append((j, i))
+    return points
 
-axes[1].imshow(loaded_edge_matrix2, cmap='gray')
-axes[1].set_title('Contours Frame 1')
-axes[1].axis('off')
+def match_points(points1, points2):
+    # placeholder function. May need to find a more complex algorithm
+    return list(zip(points1, points2))  # assume the points are in order and directly matchable
 
-plt.show()
+def compute_homography(matches):
+    # Convert pairs to the format expected by cv2.findHomography
+    src_pts = np.float32([m[0] for m in matches]).reshape(-1, 1, 2)
+    dst_pts = np.float32([m[1] for m in matches]).reshape(-1, 1, 2)
+    
+    # Calcul de l'homographie
+    homography_matrix, status = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+    return homography_matrix
+
+
+
+# main
+key_points1 = select_key_points(edge_matrix1)
+key_points2 = select_key_points(edge_matrix2)
+
+matches = match_points(key_points1, key_points2)
+homography_matrix = compute_homography(matches)
+
+print(homography_matrix)
