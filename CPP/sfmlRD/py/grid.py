@@ -24,13 +24,13 @@ def save_to_csv(grid, file_path):
 def remap_values(grayscale_array, r1, r2):
     return r1 + (r2 - r1) * grayscale_array 
 
-image_path = 'bin/media/chat/frame7bright.png'
+image_path = 'bin/media/chat/frame0bright.png'
 csv_output_path = 'bin/data/grid.csv'
 
 
 
 grayscale_data = image_to_grayscale(image_path)
-remapped_data = 2*remap_values(grayscale_data, r1, r2)-1
+remapped_data = 2*remap_values(grayscale_data, r1, r2)-1   #fonction 2x - 1
 save_to_csv(remapped_data, csv_output_path)
 #j'ai changé pour remapped
 

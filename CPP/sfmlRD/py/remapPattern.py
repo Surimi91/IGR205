@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import csv
+import gif
 
 def load_image_grayscale(image_path):
     return cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
@@ -73,4 +74,7 @@ def main(i):
 
 
 if __name__ == "__main__":
-    main(1)
+    for i in range(8):
+        main(i)
+
+    gif.images_to_gif('outputRemap', 'outputRemap/animated.gif')

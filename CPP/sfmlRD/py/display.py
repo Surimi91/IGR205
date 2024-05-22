@@ -4,6 +4,10 @@ from skimage.filters import threshold_otsu, gaussian
 from skimage.morphology import skeletonize, binary_dilation, binary_erosion
 
 
+from skimage.measure import label, regionprops
+from skimage.color import label2rgb
+
+
 def CSVtoGrid(path):
     grid = pd.read_csv(path, header=None)
     return grid.values
@@ -31,10 +35,13 @@ def refine_skeleton(skeleton):
     return skeleton
 
 
+
 # main
 path = 'bin/data/output.csv'
 image = CSVtoGrid(path)
 binary_image, skeletonized_image = binarize_and_skeletonize(image)
+
+
 
 plt.imshow(skeletonized_image, cmap='gray')
 plt.axis('off')
