@@ -28,19 +28,49 @@ def find_corresponding_point(x, y, flow):
     corresponding_point = (int(x + flow_x), int(y + flow_y))
     return corresponding_point
 
-# Main
-i = 1  # number for image
-image_path0 = 'bin/media/chat/frame0bright.png'
-image_path1 = f'bin/media/chat/frame{i}bright.png'
+def remap_grid(grid, flow):
+    height, width = grid.shape
+    remapped_grid = np.zeros_like(grid)
+    for y in range(height):
+        for x in range(width):
+            new_x, new_y = find_corresponding_point(x, y, flow)
+            if 0 <= new_x < width and 0 <= new_y < height:
+                remapped_grid[new_y, new_x] = grid[y, x]
+    return remapped_grid
 
-flow = calculate_optical_flow(image_path0, image_path1)
+def display_grids(remapped_grid):
+    # convert to uint8
+    if remapped_grid.dtype != np.uint8:
+        remapped_grid = cv2.normalize(remapped_grid, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    
+    cv2.imshow('Remapped Grid', remapped_grid)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+def save_to_png(image, output_png_path):
+    if image.dtype != np.uint8:
+        image = cv2.normalize(image, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    cv2.imwrite(output_png_path, image)
+
+
+# main
+
+def main(i):
+    image_path0 = 'bin/media/chat/frame0bright.png'
+    image_path = f'bin/media/chat/frame{i}bright.png'
+
+    grid = load_from_csv('bin/data/output.csv')
+
+
+    flow = calculate_optical_flow(image_path0, image_path)
+    remapped_grid = remap_grid(grid, flow)
+
+    save_to_png(remapped_grid, f'outputRemap/{i}.png')
+
+    print(f"Remapped grid saved to outputRemap/{i}.png")
 
 
 
-test_x, test_y = 300, 250  # test for coordinates in the first image
-corresponding_point = find_corresponding_point(test_x, test_y, flow)
 
-if corresponding_point:
-    print(f"Point ({test_x}, {test_y}) in image 0 corresponds to {corresponding_point} in image {i}")
-else:
-    print(f"No corresponding point")
+if __name__ == "__main__":
+    main(1)
