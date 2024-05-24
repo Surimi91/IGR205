@@ -1,6 +1,6 @@
 # IGR205
-| ![chat](https://github.com/Surimi91/IGR205/assets/166547684/176b6b40-a8b2-4b43-bb30-80c0aaa44543) | ![animated](https://github.com/Surimi91/IGR205/assets/125984433/6ad4026d-13f0-4926-ae4d-03fa4a19ed86) |
-|:---:|:---:|
+| ![chat](https://github.com/Surimi91/IGR205/assets/166547684/176b6b40-a8b2-4b43-bb30-80c0aaa44543) | ![animated](https://github.com/Surimi91/IGR205/assets/125984433/6ad4026d-13f0-4926-ae4d-03fa4a19ed86) | ![animated](https://github.com/Surimi91/IGR205/assets/125984433/d63fd2c8-1553-4e87-b0e1-700584823399) |
+|:---:|:---:|:---:|
 
 ## Installations nécessaires:
 pip install : matplotlib, pandas, skimage, PIL, numpy, cv2
