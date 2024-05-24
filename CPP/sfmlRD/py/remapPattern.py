@@ -21,22 +21,39 @@ def load_from_csv(input_csv_path):
         matrix = [list(map(int, row)) for row in reader]
     return np.array(matrix)
 
-def calculate_optical_flow(image_path0, image_path1):
+def calculate_optical_flow_mean(image_path0, image_path1, patch_size=15):
     img0 = load_image_grayscale(image_path0)
     img1 = load_image_grayscale(image_path1)
-    
-    flow = cv2.calcOpticalFlowFarneback(img0, img1, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-    return flow
 
-def remap_grid(grid, flow):
+    # flux optique dense entre les deux images
+    flow = cv2.calcOpticalFlowFarneback(img0, img1, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+    
+    height, width = flow.shape[:2]
+    mean_flow_height = (height + patch_size - 1) // patch_size
+    mean_flow_width = (width + patch_size - 1) // patch_size
+    mean_flow = np.zeros((mean_flow_height, mean_flow_width, 2), np.float32)
+
+    for y in range(0, height, patch_size):
+        for x in range(0, width, patch_size):
+            patch_flow = flow[y:y+patch_size, x:x+patch_size]
+            mean_dx = np.mean(patch_flow[..., 0])
+            mean_dy = np.mean(patch_flow[..., 1])
+            mean_flow[y // patch_size, x // patch_size] = (mean_dx, mean_dy)
+
+    return mean_flow, patch_size
+
+def remap_grid(grid, mean_flow, patch_size):
     height, width = grid.shape
     remapped_grid = np.zeros_like(grid)
     for y in range(height):
         for x in range(width):
-            flow_x, flow_y = flow[y, x]
-            new_x, new_y = int(x + flow_x), int(y + flow_y)
-            if 0 <= new_x < width and 0 <= new_y < height:
-                remapped_grid[new_y, new_x] = grid[y, x]
+            if grid[y, x] == 1:  # Only move black pixels
+                zone_y = min(y // patch_size, mean_flow.shape[0] - 1)
+                zone_x = min(x // patch_size, mean_flow.shape[1] - 1)
+                flow_x, flow_y = mean_flow[zone_y, zone_x]
+                new_x, new_y = int(x + flow_x), int(y + flow_y)
+                if 0 <= new_x < width and 0 <= new_y < height:
+                    remapped_grid[new_y, new_x] = grid[y, x]
     return remapped_grid
 
 def save_to_png(image, output_png_path):
@@ -61,13 +78,13 @@ def images_to_gif(input_folder, output_path, duration=300):
 # main
 
 def main(i):
-    image_path0 = 'bin/media/chat/frame0bright.png'
-    image_path = f'bin/media/chat/frame{i}bright.png'
+    image_path0 = 'bin/media/carre/f0.png'
+    image_path = f'bin/media/carre/f{i}.png'
 
     grid = load_from_csv('bin/data/output.csv')
 
-    flow = calculate_optical_flow(image_path0, image_path)
-    remapped_grid = remap_grid(grid, flow)
+    mean_flow, patch_size = calculate_optical_flow_mean(image_path0, image_path)
+    remapped_grid = remap_grid(grid, mean_flow, patch_size)
     remapped_grid = invert_colors(remapped_grid)
 
     save_to_png(remapped_grid, f'outputRemap/{i}.png')
