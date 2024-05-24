@@ -3,6 +3,7 @@ import numpy as np
 import csv
 import os
 from PIL import Image
+import matplotlib.pyplot as plt
 
 def load_image_grayscale(image_path):
     return cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
@@ -21,44 +22,34 @@ def load_from_csv(input_csv_path):
         matrix = [list(map(int, row)) for row in reader]
     return np.array(matrix)
 
-def calculate_optical_flow_lucas_kanade(image_path0, image_path1):
-    img0 = load_image_grayscale(image_path0)
-    img1 = load_image_grayscale(image_path1)
-    
-    height, width = img0.shape
-    flow = np.zeros((height, width, 2), np.float32)
+def find_bounding_quadrilateral(image):
+    non_zero_points = cv2.findNonZero(image)
+    rect = cv2.minAreaRect(non_zero_points)
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)
+    return box
 
-    # Paramètres pour le flux optique de Lucas-Kanade
-    lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+def draw_contour(image, contour):
+    contour_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    cv2.drawContours(contour_image, [contour], -1, (0, 255, 0), 3)
+    return contour_image
 
-    # Détecter les points de caractéristiques dans l'image initiale
-    p0 = cv2.goodFeaturesToTrack(img0, mask=None, maxCorners=10000, qualityLevel=0.01, minDistance=1, blockSize=7)
+def estimate_rotation_translation(box0, box1):
+    transform_matrix, inliers = cv2.estimateAffinePartial2D(box0, box1, method=cv2.RANSAC)
+    return transform_matrix
 
-    # Calculer le flux optique
-    p1, st, err = cv2.calcOpticalFlowPyrLK(img0, img1, p0, None, **lk_params)
-
-    # Sélectionner les bons points
-    good_new = p1[st == 1]
-    good_old = p0[st == 1]
-
-    # Mettre à jour le flux avec les déplacements calculés
-    for (new, old) in zip(good_new, good_old):
-        a, b = new.ravel()
-        c, d = old.ravel()
-        flow[int(d), int(c)] = (a - c, b - d)
-
-    return flow
-
-def remap_grid(grid, flow):
+def apply_transformation_to_grid(grid, transform_matrix):
     height, width = grid.shape
     remapped_grid = np.zeros_like(grid)
+    
     for y in range(height):
         for x in range(width):
             if grid[y, x] == 1:  # Only move black pixels
-                flow_x, flow_y = flow[y, x]
-                new_x, new_y = int(x + flow_x), int(y + flow_y)
+                new_pos = np.dot(transform_matrix[:, :2], np.array([x, y])) + transform_matrix[:, 2]
+                new_x, new_y = int(new_pos[0]), int(new_pos[1])
                 if 0 <= new_x < width and 0 <= new_y < height:
                     remapped_grid[new_y, new_x] = grid[y, x]
+                    
     return remapped_grid
 
 def save_to_png(image, output_png_path):
@@ -80,16 +71,39 @@ def images_to_gif(input_folder, output_path, duration=300):
     else:
         print("No images found in the input folder.")
 
+def display_image_with_contour(image_path, contour):
+    image = cv2.imread(image_path)
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    contour_image = draw_contour(gray_image, contour)
+    plt.figure(figsize=(8, 8))
+    plt.imshow(cv2.cvtColor(contour_image, cv2.COLOR_BGR2RGB))
+    plt.title('Detected Border')
+    plt.show()
+
 # main
 
 def main(i):
     image_path0 = 'bin/media/carre/f0.png'
     image_path = f'bin/media/carre/f{i}.png'
 
+    img0 = load_image_grayscale(image_path0)
+    img1 = load_image_grayscale(image_path)
+
     grid = load_from_csv('bin/data/output.csv')
 
-    flow = calculate_optical_flow_lucas_kanade(image_path0, image_path)
-    remapped_grid = remap_grid(grid, flow)
+    box0 = find_bounding_quadrilateral(img0)
+    box1 = find_bounding_quadrilateral(img1)
+
+    if box0 is None or box1 is None:
+        print("Error: Could not find a quadrilateral in one of the images.")
+        return
+
+    # Display contours for debugging
+    #display_image_with_contour(image_path0, box0)
+    #display_image_with_contour(image_path, box1)
+
+    transform_matrix = estimate_rotation_translation(box0, box1)
+    remapped_grid = apply_transformation_to_grid(grid, transform_matrix)
     remapped_grid = invert_colors(remapped_grid)
 
     save_to_png(remapped_grid, f'outputRemap/{i}.png')
