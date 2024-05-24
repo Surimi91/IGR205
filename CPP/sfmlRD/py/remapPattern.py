@@ -21,36 +21,41 @@ def load_from_csv(input_csv_path):
         matrix = [list(map(int, row)) for row in reader]
     return np.array(matrix)
 
-def calculate_optical_flow_mean(image_path0, image_path1, patch_size=15):
+def calculate_optical_flow_lucas_kanade(image_path0, image_path1):
     img0 = load_image_grayscale(image_path0)
     img1 = load_image_grayscale(image_path1)
-
-    # flux optique dense entre les deux images
-    flow = cv2.calcOpticalFlowFarneback(img0, img1, None, 0.5, 3, 15, 3, 5, 1.2, 0)
     
-    height, width = flow.shape[:2]
-    mean_flow_height = (height + patch_size - 1) // patch_size
-    mean_flow_width = (width + patch_size - 1) // patch_size
-    mean_flow = np.zeros((mean_flow_height, mean_flow_width, 2), np.float32)
+    height, width = img0.shape
+    flow = np.zeros((height, width, 2), np.float32)
 
-    for y in range(0, height, patch_size):
-        for x in range(0, width, patch_size):
-            patch_flow = flow[y:y+patch_size, x:x+patch_size]
-            mean_dx = np.mean(patch_flow[..., 0])
-            mean_dy = np.mean(patch_flow[..., 1])
-            mean_flow[y // patch_size, x // patch_size] = (mean_dx, mean_dy)
+    # Paramètres pour le flux optique de Lucas-Kanade
+    lk_params = dict(winSize=(15, 15), maxLevel=2, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
 
-    return mean_flow, patch_size
+    # Détecter les points de caractéristiques dans l'image initiale
+    p0 = cv2.goodFeaturesToTrack(img0, mask=None, maxCorners=10000, qualityLevel=0.01, minDistance=1, blockSize=7)
 
-def remap_grid(grid, mean_flow, patch_size):
+    # Calculer le flux optique
+    p1, st, err = cv2.calcOpticalFlowPyrLK(img0, img1, p0, None, **lk_params)
+
+    # Sélectionner les bons points
+    good_new = p1[st == 1]
+    good_old = p0[st == 1]
+
+    # Mettre à jour le flux avec les déplacements calculés
+    for (new, old) in zip(good_new, good_old):
+        a, b = new.ravel()
+        c, d = old.ravel()
+        flow[int(d), int(c)] = (a - c, b - d)
+
+    return flow
+
+def remap_grid(grid, flow):
     height, width = grid.shape
     remapped_grid = np.zeros_like(grid)
     for y in range(height):
         for x in range(width):
             if grid[y, x] == 1:  # Only move black pixels
-                zone_y = min(y // patch_size, mean_flow.shape[0] - 1)
-                zone_x = min(x // patch_size, mean_flow.shape[1] - 1)
-                flow_x, flow_y = mean_flow[zone_y, zone_x]
+                flow_x, flow_y = flow[y, x]
                 new_x, new_y = int(x + flow_x), int(y + flow_y)
                 if 0 <= new_x < width and 0 <= new_y < height:
                     remapped_grid[new_y, new_x] = grid[y, x]
@@ -83,8 +88,8 @@ def main(i):
 
     grid = load_from_csv('bin/data/output.csv')
 
-    mean_flow, patch_size = calculate_optical_flow_mean(image_path0, image_path)
-    remapped_grid = remap_grid(grid, mean_flow, patch_size)
+    flow = calculate_optical_flow_lucas_kanade(image_path0, image_path)
+    remapped_grid = remap_grid(grid, flow)
     remapped_grid = invert_colors(remapped_grid)
 
     save_to_png(remapped_grid, f'outputRemap/{i}.png')
