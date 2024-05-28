@@ -7,7 +7,7 @@
 
 
 ## Installations nécessaires:
-pip install : matplotlib, pandas, skimage, PIL, numpy, cv2
+pip install : matplotlib, pandas, skimage, PIL, numpy, cv2, subprocess, threading
 
 SFML for cpp
 
