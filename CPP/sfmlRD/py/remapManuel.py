@@ -13,7 +13,7 @@ def segment_color(image, lower_hsv, upper_hsv):
 def sort_files(files):
     return sorted(files, key=lambda x: int(x.split('f')[1].split('.')[0]))
 
-image_folder = "rond"
+image_folder = "bin/media/rond"
 images = []
 filenames = sort_files([f for f in os.listdir(image_folder) if f.endswith(".png")])
 for filename in filenames:
