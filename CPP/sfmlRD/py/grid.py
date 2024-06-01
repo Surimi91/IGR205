@@ -6,7 +6,7 @@ import cv2
 r1=0.396
 r2=0.588
 
-rows, columns = 512, 512  # doit etre comme le cpp
+rows, columns = 512, 512  # doit etre comme la taille indiquée dans le cpp
 
 def image_to_grayscale(image_path):
     img = Image.open(image_path).convert('L')  # Convert to grayscale
@@ -29,6 +29,5 @@ csv_output_path = 'bin/data/grid.csv'
 
 
 grayscale_data = image_to_grayscale(image_path)
-remapped_data = 2*remap_values(grayscale_data, r1, r2)-1   #fonction 2x - 1
+remapped_data = 2*remap_values(grayscale_data, r1, r2)-1   # fonction 2x - 1
 save_to_csv(remapped_data, csv_output_path)
-#j'ai changé pour remapped

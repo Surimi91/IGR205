@@ -95,6 +95,7 @@ for i in range(len(chambres)):
 
 
 
+
 #D/A
 max_dist = 0
 start_node, end_node = None, None
@@ -108,8 +109,9 @@ for i in range(len(chambres)):
 
 
 
-
 shortest_path = nx.dijkstra_path(G, source=start_node, target=end_node)
+
+
 
 
 '''
@@ -122,8 +124,9 @@ nx.draw_networkx_edges(G, pos=positions, edgelist=path_edges, edge_color='red', 
 plt.scatter(*positions[start_node], color='green', s=100, zorder=5)
 plt.scatter(*positions[end_node], color='blue', s=100, zorder=5)
 
-plt.title('Chemin trouvé dans le graphe des chambres')
 plt.show() '''
+
+
 
 # Superposer le path
 for i in range(len(shortest_path) - 1):
@@ -155,6 +158,6 @@ rr_end, cc_end = disk((int(end_pos[1]), int(end_pos[0])), 2)
 
 # final maze display
 plt.figure(figsize=(6, 6))
-grille=1-(grille > 0.5).astype(int)
+grille=1-(grille > 0.5).astype(int) #inversion pour les couleurs
 plt.imshow(grille, cmap='gray')
 plt.show()
