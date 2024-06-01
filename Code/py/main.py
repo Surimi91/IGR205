@@ -19,3 +19,5 @@ def run_executable(executable_path):
 if __name__ == "__main__":
     gridGeneration = 'py/grid.py'
     reactionDiffusion = 'bin/app'
+    patternToMaze='py/patternToMaze.py'
+    remap='py/remap.py'
