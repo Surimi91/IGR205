@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Segmentation des objets par couleur
+#il faudrait avant avoir bien ségmenté l'images avec des couleurs distinctes, mais on tourne un peu en rond
 def segment_color(image, lower_hsv, upper_hsv):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
@@ -13,7 +14,7 @@ def segment_color(image, lower_hsv, upper_hsv):
 def sort_files(files):
     return sorted(files, key=lambda x: int(x.split('f')[1].split('.')[0]))
 
-image_folder = "bin/media/rond"
+image_folder = "bin/media/rond"    #images doivent etre nommées f0,f1,f2...
 images = []
 filenames = sort_files([f for f in os.listdir(image_folder) if f.endswith(".png")])
 for filename in filenames:
@@ -62,8 +63,8 @@ for i, img in enumerate(images):
     
 
 '''
-    if i < 5:  # test premirers images
-        plt.figure(figsize=(8, 8))
+    if i < 3:  # test premirers images
+        plt.figure(figsize=(6, 6))
         plt.imshow(cv2.cvtColor(output_img, cv2.COLOR_BGRA2RGBA))
         plt.title(f'Image {i} avec objets détectés')
         plt.show()    '''
@@ -79,16 +80,8 @@ for color in colors:
         y = [pos[1] for pos in positions]
         #chaque point, pour un objet, puis chaque point pour l'autre etc...
 
-
+        #on pourrait detecter tous les pixels qui appartiennent à l'objet considéré
 
         #plt.plot(x, y, marker='o', label=f'{color} Objet {idx}')
 
-
-
-'''
-plt.xlabel('Position X')
-plt.ylabel('Position Y')
-plt.title('Évolution de la position des objets')
-plt.legend()
-plt.show()
-'''
+#plt.show()
