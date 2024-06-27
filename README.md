@@ -28,4 +28,8 @@ It's a binary pixel grid (0 for white, 1 for black).
 
   # Creating and moving the maze
 
-  Now we operate through ipynb notebooks
+  Now we operate through ipynb notebooks\
+  - exampleNotebook is used as a pre-executed notebook to see each step clearly
+  - Then main.ipynb contains several example that be executed to see results
+Note: Those notebooks are focused on the process of creating coherent frames, thus do not return complete gif. That's why you can find some example of our results down here:
+
